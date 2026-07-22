@@ -6,10 +6,10 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.fightclub.attendance.data.local.entity.AttendanceStatus
-import com.fightclub.attendance.data.local.entity.SmsTrigger
+import com.fightclub.attendance.data.local.entity.MessageTrigger
 import com.fightclub.attendance.data.repository.AttendanceStatusRepository
 import com.fightclub.attendance.util.Constants
-import com.fightclub.attendance.worker.SendSmsWorker
+import com.fightclub.attendance.worker.SendWhatsAppMessageWorker
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -36,14 +36,14 @@ class AttendanceResponseHandler @Inject constructor(
         }
 
         attendanceStatusRepository.setTodayStatus(AttendanceStatus.NOT_ATTENDING)
-        val request = OneTimeWorkRequestBuilder<SendSmsWorker>()
+        val request = OneTimeWorkRequestBuilder<SendWhatsAppMessageWorker>()
             .setInputData(
                 Data.Builder()
-                    .putString(Constants.INPUT_SMS_TRIGGER, SmsTrigger.MANUAL_NO_RESPONSE.name)
+                    .putString(Constants.INPUT_MESSAGE_TRIGGER, MessageTrigger.MANUAL_NO_RESPONSE.name)
                     .build()
             )
             .build()
         WorkManager.getInstance(context)
-            .enqueueUniqueWork(Constants.WORK_SEND_SMS, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
+            .enqueueUniqueWork(Constants.WORK_SEND_MESSAGE, ExistingWorkPolicy.APPEND_OR_REPLACE, request)
     }
 }

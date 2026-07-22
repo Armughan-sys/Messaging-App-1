@@ -34,7 +34,7 @@ class SettingsViewModel @Inject constructor(
     val settings: StateFlow<AppSettings> = settingsRepository.observeSettings()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppSettings.DEFAULT)
 
-    fun updateMessage(message: String) = updateAndReschedule { it.copy(smsMessage = message) }
+    fun updateMessage(message: String) = updateAndReschedule { it.copy(messageText = message) }
 
     fun updatePromptTime1(time: LocalTime) = updateAndReschedule { it.copy(promptTime1 = time) }
     fun updatePromptTime2(time: LocalTime) = updateAndReschedule { it.copy(promptTime2 = time) }

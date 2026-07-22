@@ -14,7 +14,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Contacts
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.RestartAlt
-import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,14 +37,6 @@ data class PermissionRationale(
 )
 
 fun requiredRuntimePermissions(): List<PermissionRationale> = buildList {
-    add(
-        PermissionRationale(
-            permission = Manifest.permission.SEND_SMS,
-            icon = Icons.Filled.Sms,
-            titleRes = R.string.permission_sms_title,
-            explanationRes = R.string.permission_sms_explanation
-        )
-    )
     add(
         PermissionRationale(
             permission = Manifest.permission.READ_CONTACTS,

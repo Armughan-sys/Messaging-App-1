@@ -3,18 +3,22 @@ package com.fightclub.attendance.util
 /** App-wide constants shared across schedulers, receivers, workers, and UI. */
 object Constants {
 
-    /** The manager this app searches for and sends attendance SMS messages to. */
+    /** The manager this app searches for and sends attendance WhatsApp messages to. */
     const val TARGET_CONTACT_DISPLAY_NAME = "Abdullah Malik KAK"
+
+    /** Package name of the (non-Business) WhatsApp app the automation targets. */
+    const val WHATSAPP_PACKAGE_NAME = "com.whatsapp"
 
     // --- Notification channels ---
     const val CHANNEL_ATTENDANCE_PROMPT = "attendance_prompt_channel"
-    const val CHANNEL_SMS_STATUS = "sms_status_channel"
+    const val CHANNEL_MESSAGE_STATUS = "message_status_channel"
 
     const val NOTIFICATION_ID_ATTENDANCE_PROMPT = 1001
-    const val NOTIFICATION_ID_SMS_STATUS = 1002
+    const val NOTIFICATION_ID_MESSAGE_STATUS = 1002
+    const val NOTIFICATION_ID_ACCESSIBILITY_DISABLED = 1003
 
     // --- WorkManager unique work names ---
-    const val WORK_SEND_SMS = "work_send_sms"
+    const val WORK_SEND_MESSAGE = "work_send_message"
     const val WORK_RESCHEDULE_ALARMS = "work_reschedule_alarms"
 
     // --- Intent extra keys ---
@@ -28,7 +32,7 @@ object Constants {
     const val ACTION_ATTENDANCE_NO = "com.fightclub.attendance.action.NO"
 
     // --- Worker input data keys ---
-    const val INPUT_SMS_TRIGGER = "input_sms_trigger"
+    const val INPUT_MESSAGE_TRIGGER = "input_message_trigger"
 
     // --- AlarmManager request-code namespaces ---
     // Each namespace is offset far enough apart that (namespace + DayOfWeek.value [1-7]) can

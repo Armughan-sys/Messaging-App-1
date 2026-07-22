@@ -42,7 +42,7 @@ class SettingsRepositoryImplTest {
         val settings = repository.getSettings()
 
         assertNull(settings.contact)
-        assertEquals("AoA Abdullah\nSaim and me won't be attending the class today", settings.smsMessage)
+        assertEquals("AoA Abdullah\nSaim and me won't be attending the class today", settings.messageText)
         assertEquals(setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY), settings.classDays)
         assertEquals(setOf(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY), settings.autoSendDays)
     }

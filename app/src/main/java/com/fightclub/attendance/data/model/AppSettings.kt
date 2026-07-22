@@ -19,7 +19,7 @@ data class SavedContact(
 /** Domain-level, strongly-typed view of [SettingsEntity]. */
 data class AppSettings(
     val contact: SavedContact?,
-    val smsMessage: String,
+    val messageText: String,
     val promptTime1: LocalTime,
     val promptTime2: LocalTime,
     val promptTime3: LocalTime,
@@ -32,7 +32,7 @@ data class AppSettings(
     companion object {
         val DEFAULT = AppSettings(
             contact = null,
-            smsMessage = SettingsEntity.DEFAULT_SMS_MESSAGE,
+            messageText = SettingsEntity.DEFAULT_MESSAGE_TEXT,
             promptTime1 = LocalTime.of(13, 0),
             promptTime2 = LocalTime.of(15, 0),
             promptTime3 = LocalTime.of(15, 45),
@@ -60,7 +60,7 @@ fun SettingsEntity.toDomain(): AppSettings = AppSettings(
     } else {
         null
     },
-    smsMessage = smsMessage,
+    messageText = messageText,
     promptTime1 = LocalTime.parse(promptTime1),
     promptTime2 = LocalTime.parse(promptTime2),
     promptTime3 = LocalTime.parse(promptTime3),
@@ -75,7 +75,7 @@ fun AppSettings.toEntity(): SettingsEntity = SettingsEntity(
     contactLookupKey = contact?.lookupKey,
     contactDisplayName = contact?.displayName,
     contactPhoneNumber = contact?.phoneNumber,
-    smsMessage = smsMessage,
+    messageText = messageText,
     promptTime1 = promptTime1.toString(),
     promptTime2 = promptTime2.toString(),
     promptTime3 = promptTime3.toString(),

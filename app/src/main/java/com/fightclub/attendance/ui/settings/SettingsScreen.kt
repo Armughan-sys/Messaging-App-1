@@ -63,7 +63,7 @@ fun SettingsScreen(
     }
 
     var editingTimeSlot by remember { mutableStateOf<TimeSlot?>(null) }
-    var messageDraft by remember(settings.smsMessage) { mutableStateOf(settings.smsMessage) }
+    var messageDraft by remember(settings.messageText) { mutableStateOf(settings.messageText) }
 
     Scaffold(
         topBar = {
@@ -115,7 +115,7 @@ fun SettingsScreen(
                     Button(
                         onClick = { viewModel.updateMessage(messageDraft) },
                         modifier = Modifier.padding(top = 12.dp),
-                        enabled = messageDraft != settings.smsMessage
+                        enabled = messageDraft != settings.messageText
                     ) {
                         Text(stringResource(R.string.settings_save_message))
                     }

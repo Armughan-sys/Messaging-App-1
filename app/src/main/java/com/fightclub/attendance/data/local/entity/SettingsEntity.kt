@@ -16,7 +16,7 @@ data class SettingsEntity(
     val contactDisplayName: String? = null,
     val contactPhoneNumber: String? = null,
 
-    val smsMessage: String = DEFAULT_SMS_MESSAGE,
+    val messageText: String = DEFAULT_MESSAGE_TEXT,
 
     // Stored as "HH:mm" (24-hour) strings so they sort and parse trivially.
     val promptTime1: String = "13:00",
@@ -35,6 +35,6 @@ data class SettingsEntity(
 ) {
     companion object {
         const val SINGLETON_ID = 1
-        const val DEFAULT_SMS_MESSAGE = "AoA Abdullah\nSaim and me won't be attending the class today"
+        const val DEFAULT_MESSAGE_TEXT = "AoA Abdullah\nSaim and me won't be attending the class today"
     }
 }

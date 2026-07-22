@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
    Pre-Android-12 backup rules (android:fullBackupContent). The Room database is intentionally
-   excluded: it contains the manager's phone number and SMS history, which should not be restored
+   excluded: it contains the manager's phone number and message history, which should not be restored
    onto a different device silently. Settings are small and non-sensitive enough to keep.
 -->
 <full-backup-content>

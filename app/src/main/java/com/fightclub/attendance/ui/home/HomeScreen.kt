@@ -1,7 +1,6 @@
 package com.fightclub.attendance.ui.home
 
 import android.content.Intent
-import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -37,8 +36,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fightclub.attendance.R
-import com.fightclub.attendance.data.local.entity.SmsDeliveryStatus
-import com.fightclub.attendance.data.model.SmsLogEntry
+import com.fightclub.attendance.data.local.entity.MessageDeliveryStatus
+import com.fightclub.attendance.data.model.MessageLogEntry
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -87,6 +86,20 @@ fun HomeScreen(
                 }
             }
 
+            if (!state.whatsAppAccessibilityServiceEnabled) {
+                item {
+                    WarningCard(
+                        icon = Icons.Filled.Warning,
+                        text = stringResource(R.string.home_warning_accessibility_disabled),
+                        actionLabel = stringResource(R.string.home_warning_accessibility_action),
+                        onAction = {
+                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+                            context.startActivity(intent)
+                        }
+                    )
+                }
+            }
+
             if (!state.canScheduleExactAlarms) {
                 item {
                     WarningCard(
@@ -113,7 +126,7 @@ fun HomeScreen(
             item {
                 InfoCard(
                     icon = Icons.Filled.Send,
-                    title = stringResource(R.string.home_next_auto_sms),
+                    title = stringResource(R.string.home_next_auto_message),
                     value = state.nextAutoSendMillis?.let(::formatMillis)
                         ?: stringResource(R.string.home_no_schedule)
                 )
@@ -129,7 +142,7 @@ fun HomeScreen(
             }
 
             item {
-                LastSmsCard(state.lastSms)
+                LastMessageCard(state.lastMessage)
             }
         }
     }
@@ -150,14 +163,14 @@ private fun InfoCard(icon: androidx.compose.ui.graphics.vector.ImageVector, titl
 }
 
 @Composable
-private fun LastSmsCard(lastSms: SmsLogEntry?) {
+private fun LastMessageCard(lastMessage: MessageLogEntry?) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = stringResource(R.string.home_last_sms_sent), style = MaterialTheme.typography.labelLarge)
+            Text(text = stringResource(R.string.home_last_message_sent), style = MaterialTheme.typography.labelLarge)
 
-            if (lastSms == null) {
+            if (lastMessage == null) {
                 Text(
-                    text = stringResource(R.string.home_no_sms_yet),
+                    text = stringResource(R.string.home_no_message_yet),
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 4.dp)
                 )
@@ -165,18 +178,18 @@ private fun LastSmsCard(lastSms: SmsLogEntry?) {
             }
 
             Text(
-                text = formatInstant(lastSms.timestamp),
+                text = formatInstant(lastMessage.timestamp),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 4.dp)
             )
 
-            val (statusIcon, statusText) = when (lastSms.status) {
-                SmsDeliveryStatus.SENT, SmsDeliveryStatus.DELIVERED ->
-                    Icons.Filled.CheckCircle to stringResource(R.string.home_sms_status_sent)
-                SmsDeliveryStatus.FAILED ->
-                    Icons.Filled.Error to (lastSms.failureReason ?: stringResource(R.string.home_sms_status_failed))
-                SmsDeliveryStatus.PENDING ->
-                    Icons.Filled.NotificationsActive to stringResource(R.string.home_sms_status_pending)
+            val (statusIcon, statusText) = when (lastMessage.status) {
+                MessageDeliveryStatus.SENT, MessageDeliveryStatus.DELIVERED ->
+                    Icons.Filled.CheckCircle to stringResource(R.string.home_message_status_sent)
+                MessageDeliveryStatus.FAILED ->
+                    Icons.Filled.Error to (lastMessage.failureReason ?: stringResource(R.string.home_message_status_failed))
+                MessageDeliveryStatus.PENDING ->
+                    Icons.Filled.NotificationsActive to stringResource(R.string.home_message_status_pending)
             }
 
             androidx.compose.foundation.layout.Row(

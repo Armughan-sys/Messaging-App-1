@@ -2,9 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Required to send the "won't be attending" SMS to the fight club manager. -->
-    <uses-permission android:name="android.permission.SEND_SMS" />
-
     <!-- Required to search the phonebook for "Abdullah Malik KAK" and let the user pick the contact. -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
@@ -16,14 +13,27 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <!-- Exact alarms are the only reliable way to fire the attendance prompts and the automatic
-         SMS at a precise minute, including while the device is in Doze. On Android 12-13 this is
-         a special permission the user grants from Settings; on Android 14+ it is granted
+         message at a precise minute, including while the device is in Doze. On Android 12-13 this
+         is a special permission the user grants from Settings; on Android 14+ it is granted
          automatically for apps that declare it. The app degrades gracefully (inexact alarms +
          an in-app warning) if it is ever revoked. -->
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <!-- Allows the full-screen attendance prompt to appear even over the lock screen. -->
     <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <!-- Note: there is deliberately no SEND_SMS permission here. The attendance message is sent
+         through WhatsApp instead (see WhatsAppAccessibilityService); WhatsApp has no API a
+         third-party app can call to send on the user's behalf, so BIND_ACCESSIBILITY_SERVICE
+         (declared on the <service> below) plus the user manually enabling that service in
+         Settings > Accessibility is what makes the automatic send possible. -->
+
+    <!-- Needed on Android 11+ to launch WhatsApp directly (setPackage) and to check whether it's
+         installed; without this the app can still see WhatsApp resolve generic intents, but not
+         query/target it explicitly. -->
+    <queries>
+        <package android:name="com.whatsapp" />
+    </queries>
 
     <application
         android:name=".FightClubApplication"
@@ -65,7 +75,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- Fires the unconditional Tue/Thu automatic SMS, and the Mon/Wed/Fri 4:00 PM deadline. -->
+        <!-- Fires the unconditional Tue/Thu automatic message, and the Mon/Wed/Fri 4:00 PM deadline. -->
         <receiver
             android:name=".receiver.AutoSendAlarmReceiver"
             android:exported="false" />
@@ -79,6 +89,22 @@
         <receiver
             android:name=".receiver.NotificationActionReceiver"
             android:exported="false" />
+
+        <!-- Reads WhatsApp's on-screen UI to tap its Send button on the app's behalf. Must be
+             turned on manually by the user in Settings > Accessibility; it cannot be requested
+             like a normal runtime permission. See WhatsAppAccessibilityService for why. -->
+        <service
+            android:name=".automation.WhatsAppAccessibilityService"
+            android:exported="true"
+            android:label="@string/accessibility_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/accessibility_service_config" />
+        </service>
 
         <provider
             android:name="androidx.startup.InitializationProvider"
