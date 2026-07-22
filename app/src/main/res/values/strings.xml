@@ -72,7 +72,10 @@
     <string name="settings_save_message">Save message</string>
     <string name="settings_section_active_days">Active Days</string>
     <string name="settings_section_active_days_description">Every day selected below gets the same flow: a prompt, then an automatic send if you don\'t respond.</string>
-    <string name="settings_section_class_time">Class Time</string>
+    <string name="settings_section_class_time">Class Times</string>
+    <string name="settings_section_class_time_description">Class start time can be set per day, so e.g. Friday and Saturday can run at a different time than the rest.</string>
+    <string name="settings_no_active_days">No active days selected yet — turn on at least one day above.</string>
+    <string name="settings_section_prompt_and_deadline">Prompt &amp; Deadline</string>
     <string name="settings_prompt_lead_hours">Prompt this many hours before class</string>
     <string name="settings_auto_send_time">Auto-send deadline (if you don\'t respond)</string>
     <string name="settings_section_theme">Theme</string>

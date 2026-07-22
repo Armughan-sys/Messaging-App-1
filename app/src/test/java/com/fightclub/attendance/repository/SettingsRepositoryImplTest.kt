@@ -55,9 +55,29 @@ class SettingsRepositoryImplTest {
             ),
             settings.activeDays
         )
-        assertEquals(LocalTime.of(18, 0), settings.classTime)
+        for (day in DayOfWeek.values()) {
+            assertEquals("class time mismatch for $day", LocalTime.of(18, 0), settings.classTimeFor(day))
+        }
         assertEquals(3, settings.promptLeadHours)
-        assertEquals(LocalTime.of(15, 0), settings.promptTime)
+        assertEquals(LocalTime.of(15, 0), settings.promptTimeFor(DayOfWeek.FRIDAY))
+    }
+
+    @Test
+    fun `updateSettings with a different Friday and Saturday class time persists per-day`() = runTest {
+        val first = repository.getSettings()
+        val updated = first.copy(
+            classTimes = first.classTimes +
+                (DayOfWeek.FRIDAY to LocalTime.of(19, 30)) +
+                (DayOfWeek.SATURDAY to LocalTime.of(10, 0))
+        )
+
+        repository.updateSettings(updated)
+
+        val result = repository.getSettings()
+        assertEquals(LocalTime.of(19, 30), result.classTimeFor(DayOfWeek.FRIDAY))
+        assertEquals(LocalTime.of(10, 0), result.classTimeFor(DayOfWeek.SATURDAY))
+        // Untouched days keep their previous time.
+        assertEquals(LocalTime.of(18, 0), result.classTimeFor(DayOfWeek.MONDAY))
     }
 
     @Test

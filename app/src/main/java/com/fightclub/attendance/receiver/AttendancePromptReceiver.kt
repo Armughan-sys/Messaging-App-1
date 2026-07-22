@@ -16,10 +16,10 @@ import java.time.DayOfWeek
 import javax.inject.Inject
 
 /**
- * Fires once per active day, at "class time minus the configured lead hours" (see
- * [AppSettings.promptTime][com.fightclub.attendance.data.model.AppSettings.promptTime]). Shows
- * the "are you attending?" prompt only if today's question hasn't already been answered, so a
- * stray duplicate firing can never double-prompt.
+ * Fires once per active day, at "that day's class time minus the configured lead hours" (see
+ * [AppSettings.promptTimeFor][com.fightclub.attendance.data.model.AppSettings.promptTimeFor]).
+ * Shows the "are you attending?" prompt only if today's question hasn't already been answered, so
+ * a stray duplicate firing can never double-prompt.
  *
  * Uses [android.content.BroadcastReceiver.goAsync] rather than WorkManager because the work here
  * (one status read, showing a notification, one alarm reschedule) is quick and must not be
@@ -54,7 +54,7 @@ class AttendancePromptReceiver : BroadcastReceiver() {
                 }
 
                 val settings = settingsRepository.getSettings()
-                alarmScheduler.reschedulePrompt(dayOfWeek, settings.promptTime)
+                alarmScheduler.reschedulePrompt(dayOfWeek, settings.promptTimeFor(dayOfWeek))
             } finally {
                 pendingResult.finish()
             }

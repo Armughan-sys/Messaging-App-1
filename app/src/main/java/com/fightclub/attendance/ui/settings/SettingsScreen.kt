@@ -149,11 +149,33 @@ fun SettingsScreen(
 
             item {
                 SectionCard(title = stringResource(R.string.settings_section_class_time)) {
-                    TimeRow(
-                        label = stringResource(R.string.settings_section_class_time),
-                        time = settings.classTime,
-                        onClick = { editingTimeSlot = TimeSlot.CLASS_TIME }
+                    Text(
+                        text = stringResource(R.string.settings_section_class_time_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 12.dp)
                     )
+                    if (settings.activeDays.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.settings_no_active_days),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    } else {
+                        DayOfWeek.values()
+                            .filter { it in settings.activeDays }
+                            .sortedBy { it.value }
+                            .forEach { day ->
+                                TimeRow(
+                                    label = dayFullLabels.getValue(day),
+                                    time = settings.classTimeFor(day),
+                                    onClick = { editingTimeSlot = TimeSlot.ClassTime(day) }
+                                )
+                            }
+                    }
+                }
+            }
+
+            item {
+                SectionCard(title = stringResource(R.string.settings_section_prompt_and_deadline)) {
                     PromptLeadHoursRow(
                         hours = settings.promptLeadHours,
                         onChange = viewModel::updatePromptLeadHours
@@ -161,7 +183,7 @@ fun SettingsScreen(
                     TimeRow(
                         label = stringResource(R.string.settings_auto_send_time),
                         time = settings.autoSendTime,
-                        onClick = { editingTimeSlot = TimeSlot.AUTO_SEND }
+                        onClick = { editingTimeSlot = TimeSlot.AutoSend }
                     )
                 }
             }
@@ -179,16 +201,16 @@ fun SettingsScreen(
 
     editingTimeSlot?.let { slot ->
         val initialTime = when (slot) {
-            TimeSlot.CLASS_TIME -> settings.classTime
-            TimeSlot.AUTO_SEND -> settings.autoSendTime
+            is TimeSlot.ClassTime -> settings.classTimeFor(slot.day)
+            TimeSlot.AutoSend -> settings.autoSendTime
         }
         AppTimePickerDialog(
             initialTime = initialTime,
             onDismiss = { editingTimeSlot = null },
             onConfirm = { time ->
                 when (slot) {
-                    TimeSlot.CLASS_TIME -> viewModel.updateClassTime(time)
-                    TimeSlot.AUTO_SEND -> viewModel.updateAutoSendTime(time)
+                    is TimeSlot.ClassTime -> viewModel.updateClassTime(slot.day, time)
+                    TimeSlot.AutoSend -> viewModel.updateAutoSendTime(time)
                 }
                 editingTimeSlot = null
             }
@@ -196,7 +218,10 @@ fun SettingsScreen(
     }
 }
 
-private enum class TimeSlot { CLASS_TIME, AUTO_SEND }
+private sealed class TimeSlot {
+    data class ClassTime(val day: DayOfWeek) : TimeSlot()
+    data object AutoSend : TimeSlot()
+}
 
 @Composable
 private fun SectionCard(title: String, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
@@ -261,6 +286,16 @@ private val dayLabels = mapOf(
     DayOfWeek.FRIDAY to "Fri",
     DayOfWeek.SATURDAY to "Sat",
     DayOfWeek.SUNDAY to "Sun"
+)
+
+private val dayFullLabels = mapOf(
+    DayOfWeek.MONDAY to "Monday",
+    DayOfWeek.TUESDAY to "Tuesday",
+    DayOfWeek.WEDNESDAY to "Wednesday",
+    DayOfWeek.THURSDAY to "Thursday",
+    DayOfWeek.FRIDAY to "Friday",
+    DayOfWeek.SATURDAY to "Saturday",
+    DayOfWeek.SUNDAY to "Sunday"
 )
 
 @Composable

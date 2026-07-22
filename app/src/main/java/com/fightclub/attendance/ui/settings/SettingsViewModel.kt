@@ -36,7 +36,8 @@ class SettingsViewModel @Inject constructor(
 
     fun updateMessage(message: String) = updateAndReschedule { it.copy(messageText = message) }
 
-    fun updateClassTime(time: LocalTime) = updateAndReschedule { it.copy(classTime = time) }
+    fun updateClassTime(day: DayOfWeek, time: LocalTime) =
+        updateAndReschedule { it.copy(classTimes = it.classTimes + (day to time)) }
     fun updatePromptLeadHours(hours: Int) = updateAndReschedule { it.copy(promptLeadHours = hours) }
     fun updateAutoSendTime(time: LocalTime) = updateAndReschedule { it.copy(autoSendTime = time) }
 

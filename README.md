@@ -15,8 +15,10 @@ class — on a schedule, with no manual action required most of the time.
 
 - **Every active day** (Monday through Saturday by default — fully customizable), the app follows
   the same flow:
-  - At **class time minus a configurable number of lead hours**, it shows a full-screen
-    notification: *"Are you going to today's fight class?"* with **YES** / **NO** buttons.
+  - At **that day's class time minus a configurable number of lead hours**, it shows a full-screen
+    notification: *"Are you going to today's fight class?"* with **YES** / **NO** buttons. Each day
+    can have its own class time — e.g. Friday and Saturday can run at a different time than the
+    rest of the week.
     - **YES** → nothing happens.
     - **NO** → the WhatsApp message is sent immediately.
     - **No response** → nothing more happens until the deadline.
@@ -28,9 +30,9 @@ class — on a schedule, with no manual action required most of the time.
   answered YES), the next scheduled action, the next automatic message date/time, the next
   attendance prompt, and the last message sent (date, time, delivery status) — plus a warning
   banner if WhatsApp Auto-Send is turned off.
-- Settings let you customize: the manager contact, the message text, which days are active, the
-  class start time, how many hours before class the prompt fires, the deadline (auto-send) time,
-  and the app theme (light/dark/system).
+- Settings let you customize: the manager contact, the message text, which days are active, each
+  active day's class start time, how many hours before class the prompt fires, the deadline
+  (auto-send) time, and the app theme (light/dark/system).
 
 ## How the WhatsApp send actually works
 
@@ -91,8 +93,9 @@ but it's a straightforward revert if you change your mind (swap `WhatsAppSender`
   week/month" counters (a day counts once its status is `ATTENDING`, i.e. you tapped YES).
 - **Scheduling**: `domain/scheduler/AlarmScheduler` owns every `AlarmManager` interaction. Every
   active day gets exactly two alarms, both computed from the same settings: a **prompt** alarm at
-  `AppSettings.promptTime` (class time minus the configured lead hours) and a **deadline** alarm
-  at the configured auto-send time. `AlarmManager` has no "every Tuesday" primitive, so each alarm
+  `AppSettings.promptTimeFor(day)` (that day's class time, from the per-day `classTimes` map,
+  minus the configured lead hours) and a **deadline** alarm at the configured auto-send time.
+  `AlarmManager` has no "every Tuesday" primitive, so each alarm
   re-schedules its own next occurrence, one week ahead, the moment it fires. Every alarm's
   `PendingIntent` request code is deterministic (`namespace + dayOfWeek.value`), so re-arming an
   alarm simply replaces the previous one instead of stacking a duplicate — this is what "prevent
@@ -229,7 +232,8 @@ Run unit tests with:
   one `RescheduleWorker` job, unrelated broadcasts are ignored, and repeated boots don't queue up
   duplicates.
 - `repository/SettingsRepositoryImplTest` — Room round-trip tests against an in-memory database,
-  including the derived `promptTime` (class time minus lead hours) calculation.
+  including the derived `promptTimeFor(day)` calculation and per-day class time persistence
+  (e.g. saving a different Friday/Saturday class time without disturbing other days).
 - `repository/AttendanceStatusRepositoryImplTest` — Room round-trip tests plus the weekly/monthly
   attended-class counters, verifying days outside the current week/month are correctly excluded.
 

@@ -22,7 +22,8 @@ import javax.inject.Singleton
  * Owns every [AlarmManager] interaction in the app.
  *
  * Every active day gets exactly two alarms, both computed from the same [AppSettings]:
- *  - a **prompt** alarm at [AppSettings.promptTime] ("class time" minus the configured lead hours)
+ *  - a **prompt** alarm at that day's [AppSettings.promptTimeFor] (its class time minus the
+ *    configured lead hours — different days, e.g. Friday/Saturday, can have different class times)
  *  - a **deadline** alarm at [AppSettings.autoSendTime], which auto-sends if the prompt was ignored
  *
  * Scheduling strategy: rather than relying on a single repeating alarm (AlarmManager has no
@@ -71,7 +72,7 @@ class AlarmSchedulerImpl @Inject constructor(
         cancelEveryPossibleAlarm()
 
         for (day in settings.activeDays) {
-            schedulePrompt(day, settings.promptTime)
+            schedulePrompt(day, settings.promptTimeFor(day))
             scheduleDeadline(day, settings.autoSendTime)
         }
     }
@@ -91,7 +92,7 @@ class AlarmSchedulerImpl @Inject constructor(
 
     override fun nextPromptOccurrence(settings: AppSettings): Long? =
         settings.activeDays.minOfOrNull { day ->
-            DateTimeUtils.nextOccurrenceMillis(day, settings.promptTime, clock)
+            DateTimeUtils.nextOccurrenceMillis(day, settings.promptTimeFor(day), clock)
         }
 
     private fun scheduleDeadline(dayOfWeek: DayOfWeek, time: LocalTime) {
