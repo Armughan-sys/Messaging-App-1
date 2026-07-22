@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Required to send the "won't be attending" SMS to the fight club manager. -->
+    <uses-permission android:name="android.permission.SEND_SMS" />
+
+    <!-- Required to search the phonebook for "Abdullah Malik KAK" and let the user pick the contact. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
+    <!-- Required so the app can re-create its alarms after the device restarts; without this,
+         all schedules would be silently lost on every reboot. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!-- Required (Android 13+) to show the attendance-prompt and status notifications. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Exact alarms are the only reliable way to fire the attendance prompts and the automatic
+         SMS at a precise minute, including while the device is in Doze. On Android 12-13 this is
+         a special permission the user grants from Settings; on Android 14+ it is granted
+         automatically for apps that declare it. The app degrades gracefully (inexact alarms +
+         an in-app warning) if it is ever revoked. -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!-- Allows the full-screen attendance prompt to appear even over the lock screen. -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <application
+        android:name=".FightClubApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.FightClubAttendance">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.FightClubAttendance">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Shown full-screen (even over the lock screen) for the Mon/Wed/Fri attendance prompt. -->
+        <activity
+            android:name=".notification.FullScreenAttendanceActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:launchMode="singleInstance"
+            android:theme="@style/Theme.FightClubAttendance.FullScreen" />
+
+        <!-- Restores every alarm after the device reboots. -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:exported="true"
+            android:enabled="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Fires the unconditional Tue/Thu automatic SMS, and the Mon/Wed/Fri 4:00 PM deadline. -->
+        <receiver
+            android:name=".receiver.AutoSendAlarmReceiver"
+            android:exported="false" />
+
+        <!-- Fires the 1:00 PM / 3:00 PM / 3:45 PM attendance prompts on class days. -->
+        <receiver
+            android:name=".receiver.AttendancePromptReceiver"
+            android:exported="false" />
+
+        <!-- Handles YES / NO taps from the notification itself (works even without opening the app). -->
+        <receiver
+            android:name=".receiver.NotificationActionReceiver"
+            android:exported="false" />
+
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+    </application>
+
+</manifest>

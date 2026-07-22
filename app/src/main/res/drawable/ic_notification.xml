@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Status-bar notification icon: must be a flat white silhouette per Android guidelines
+     (the system tints it automatically), reusing the same fist glyph as the launcher icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108"
+    android:tint="#FFFFFF">
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M32,50 A22,22 0,1,1 76,50 A22,22 0,1,1 32,50 Z" />
+    <path
+        android:fillColor="#FF000000"
+        android:pathData="M46,64 H62 A6,6 0 0 1 68,70 V84 A6,6 0 0 1 62,90 H46 A6,6 0 0 1 40,84 V70 A6,6 0 0 1 46,64 Z" />
+</vector>

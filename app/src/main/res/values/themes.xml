@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme. Compose owns all real theming (see ui/theme/Theme.kt); this
+         XML theme only needs to configure the window background/status bar before Compose
+         takes over, and to disable the default ActionBar since Compose provides its own TopAppBar. -->
+    <style name="Theme.FightClubAttendance" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/background_light</item>
+        <item name="android:statusBarColor">@color/primary_light</item>
+    </style>
+
+    <!-- Used only by FullScreenAttendanceActivity, which shows over the lock screen. -->
+    <style name="Theme.FightClubAttendance.FullScreen" parent="Theme.FightClubAttendance">
+        <item name="android:windowIsTranslucent">false</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+</resources>

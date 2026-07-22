@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Fight Club Attendance Assistant</string>
+
+    <!-- Notification channels -->
+    <string name="channel_attendance_prompt_name">Attendance prompts</string>
+    <string name="channel_attendance_prompt_description">Asks whether you\'re attending today\'s class</string>
+    <string name="channel_sms_status_name">SMS delivery status</string>
+    <string name="channel_sms_status_description">Confirms whether the attendance SMS was sent successfully</string>
+
+    <!-- Attendance prompt -->
+    <string name="attendance_prompt_title">Fight Club Attendance</string>
+    <string name="attendance_prompt_question">Are you going to today\'s fight class?</string>
+    <string name="action_yes">YES</string>
+    <string name="action_no">NO</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_ok">OK</string>
+
+    <!-- SMS status notification -->
+    <string name="sms_status_sent_title">Attendance SMS sent</string>
+    <string name="sms_status_sent_text">The manager has been notified.</string>
+    <string name="sms_status_failed_title">Attendance SMS failed</string>
+    <string name="sms_status_failed_text">The message could not be sent. Open the app to review.</string>
+
+    <!-- Permissions onboarding -->
+    <string name="permissions_screen_title">A few permissions first</string>
+    <string name="permissions_screen_subtitle">Fight Club Attendance Assistant needs these to notify your manager automatically.</string>
+    <string name="permissions_grant_button">Grant Permissions</string>
+    <string name="permission_sms_title">Send SMS</string>
+    <string name="permission_sms_explanation">Required to text your manager that you and Saim won\'t be attending.</string>
+    <string name="permission_contacts_title">Read Contacts</string>
+    <string name="permission_contacts_explanation">Required to find \"Abdullah Malik KAK\" in your phonebook automatically.</string>
+    <string name="permission_notifications_title">Notifications</string>
+    <string name="permission_notifications_explanation">Required to show the daily attendance question and SMS delivery status.</string>
+
+    <!-- Contact picker -->
+    <string name="contact_picker_title">Looking for %1$s</string>
+    <string name="contact_picker_none_found">No matching contact was found automatically. Please choose the correct one from your phonebook.</string>
+    <string name="contact_picker_multiple_found">More than one matching contact was found. Please choose the correct one.</string>
+    <string name="contact_picker_use_this_contact">Use this contact</string>
+    <string name="contact_picker_open_phonebook">Choose from phonebook</string>
+    <string name="searching_for_contact">Searching your contacts…</string>
+
+    <!-- Home screen -->
+    <string name="home_warning_no_contact">No manager contact configured yet. Open Settings to choose one.</string>
+    <string name="home_warning_exact_alarm">Exact alarms are disabled for this app, so prompts and automatic SMS may fire a little late.</string>
+    <string name="home_warning_exact_alarm_action">Fix in Settings</string>
+    <string name="home_next_scheduled_action">Next scheduled action</string>
+    <string name="home_next_auto_sms">Next automatic SMS</string>
+    <string name="home_next_prompt">Next attendance prompt</string>
+    <string name="home_no_schedule">Nothing scheduled</string>
+    <string name="home_last_sms_sent">Last SMS sent</string>
+    <string name="home_no_sms_yet">No SMS has been sent yet</string>
+    <string name="home_sms_status_sent">Delivered</string>
+    <string name="home_sms_status_failed">Delivery failed</string>
+    <string name="home_sms_status_pending">Sending…</string>
+
+    <!-- Settings screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_section_contact">Manager Contact</string>
+    <string name="settings_no_contact">No contact selected</string>
+    <string name="settings_change_contact">Change contact</string>
+    <string name="settings_section_message">SMS Message</string>
+    <string name="settings_save_message">Save message</string>
+    <string name="settings_section_class_days">Class Days (attendance prompts)</string>
+    <string name="settings_section_auto_send_days">Automatic Send Days (no prompt)</string>
+    <string name="settings_section_times">Times</string>
+    <string name="settings_prompt_time_1">First prompt</string>
+    <string name="settings_prompt_time_2">Second prompt</string>
+    <string name="settings_prompt_time_3">Third prompt</string>
+    <string name="settings_auto_send_time">Automatic send / deadline time</string>
+    <string name="settings_section_theme">Theme</string>
+</resources>
