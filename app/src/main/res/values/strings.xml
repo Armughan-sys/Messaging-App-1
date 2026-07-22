@@ -51,6 +51,8 @@
     <string name="home_warning_accessibility_action">Enable in Settings</string>
     <string name="home_warning_exact_alarm">Exact alarms are disabled for this app, so prompts and automatic messages may fire a little late.</string>
     <string name="home_warning_exact_alarm_action">Fix in Settings</string>
+    <string name="home_classes_this_week">This week</string>
+    <string name="home_classes_this_month">This month</string>
     <string name="home_next_scheduled_action">Next scheduled action</string>
     <string name="home_next_auto_message">Next automatic WhatsApp message</string>
     <string name="home_next_prompt">Next attendance prompt</string>
@@ -68,12 +70,10 @@
     <string name="settings_change_contact">Change contact</string>
     <string name="settings_section_message">WhatsApp Message</string>
     <string name="settings_save_message">Save message</string>
-    <string name="settings_section_class_days">Class Days (attendance prompts)</string>
-    <string name="settings_section_auto_send_days">Automatic Send Days (no prompt)</string>
-    <string name="settings_section_times">Times</string>
-    <string name="settings_prompt_time_1">First prompt</string>
-    <string name="settings_prompt_time_2">Second prompt</string>
-    <string name="settings_prompt_time_3">Third prompt</string>
-    <string name="settings_auto_send_time">Automatic send / deadline time</string>
+    <string name="settings_section_active_days">Active Days</string>
+    <string name="settings_section_active_days_description">Every day selected below gets the same flow: a prompt, then an automatic send if you don\'t respond.</string>
+    <string name="settings_section_class_time">Class Time</string>
+    <string name="settings_prompt_lead_hours">Prompt this many hours before class</string>
+    <string name="settings_auto_send_time">Auto-send deadline (if you don\'t respond)</string>
     <string name="settings_section_theme">Theme</string>
 </resources>

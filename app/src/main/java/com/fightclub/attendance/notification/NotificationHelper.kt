@@ -14,7 +14,6 @@ import androidx.core.content.ContextCompat
 import com.fightclub.attendance.R
 import com.fightclub.attendance.receiver.NotificationActionReceiver
 import com.fightclub.attendance.util.Constants
-import com.fightclub.attendance.util.PromptSlot
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -53,7 +52,7 @@ class NotificationHelper @Inject constructor(
     }
 
     /** Shows (or re-shows) today's attendance question as a full-screen, high-priority notification. */
-    fun showAttendancePrompt(slot: PromptSlot) {
+    fun showAttendancePrompt() {
         if (!hasPostNotificationPermission()) return
 
         val fullScreenIntent = Intent(context, FullScreenAttendanceActivity::class.java).apply {

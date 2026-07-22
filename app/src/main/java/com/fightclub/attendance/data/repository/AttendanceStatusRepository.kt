@@ -6,8 +6,10 @@ import com.fightclub.attendance.data.local.entity.AttendanceStatusEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.time.Clock
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAdjusters
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -23,6 +25,12 @@ interface AttendanceStatusRepository {
     suspend fun isTodayResolved(): Boolean
 
     suspend fun pruneOldEntries()
+
+    /** Classes attended (status [AttendanceStatus.ATTENDING]) from this week's Monday through today. */
+    suspend fun getAttendedCountThisWeek(): Int
+
+    /** Classes attended (status [AttendanceStatus.ATTENDING]) from the 1st of this month through today. */
+    suspend fun getAttendedCountThisMonth(): Int
 }
 
 @Singleton
@@ -33,22 +41,23 @@ class AttendanceStatusRepositoryImpl @Inject constructor(
 
     private val dateFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
-    private fun today(): String = LocalDate.now(clock).format(dateFormatter)
+    private fun today(): LocalDate = LocalDate.now(clock)
+    private fun LocalDate.iso(): String = format(dateFormatter)
 
     override suspend fun getTodayStatus(): AttendanceStatus {
-        val entity = dao.getByDate(today())
+        val entity = dao.getByDate(today().iso())
         return entity?.status?.let { AttendanceStatus.valueOf(it) } ?: AttendanceStatus.PENDING
     }
 
     override fun observeTodayStatus(): Flow<AttendanceStatus> =
-        dao.observeByDate(today()).map { entity ->
+        dao.observeByDate(today().iso()).map { entity ->
             entity?.status?.let { AttendanceStatus.valueOf(it) } ?: AttendanceStatus.PENDING
         }
 
     override suspend fun setTodayStatus(status: AttendanceStatus) {
         dao.upsert(
             AttendanceStatusEntity(
-                date = today(),
+                date = today().iso(),
                 status = status.name,
                 updatedAtMillis = clock.millis()
             )
@@ -59,7 +68,19 @@ class AttendanceStatusRepositoryImpl @Inject constructor(
         getTodayStatus() != AttendanceStatus.PENDING
 
     override suspend fun pruneOldEntries() {
-        val cutoff = LocalDate.now(clock).minusDays(30).format(dateFormatter)
+        val cutoff = today().minusDays(30).iso()
         dao.deleteOlderThan(cutoff)
+    }
+
+    override suspend fun getAttendedCountThisWeek(): Int {
+        val today = today()
+        val weekStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        return dao.countByStatusInRange(AttendanceStatus.ATTENDING.name, weekStart.iso(), today.iso())
+    }
+
+    override suspend fun getAttendedCountThisMonth(): Int {
+        val today = today()
+        val monthStart = today.withDayOfMonth(1)
+        return dao.countByStatusInRange(AttendanceStatus.ATTENDING.name, monthStart.iso(), today.iso())
     }
 }

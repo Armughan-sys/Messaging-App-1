@@ -93,14 +93,14 @@ class SendWhatsAppMessageWorkerTest {
     }
 
     @Test
-    fun `unconditional Tuesday send always sends regardless of attendance status`() = runTest {
+    fun `deadline send fires and reschedules next week when nobody responded`() = runTest {
         coEvery { settingsRepository.getSettings() } returns settingsWithContact
         coEvery { attendanceStatusRepository.isTodayResolved() } returns false
         coEvery { whatsAppSender.sendMessage(any(), any()) } returns WhatsAppSendResult.Sent
 
         val worker = buildWorker(
             Data.Builder()
-                .putString(Constants.INPUT_MESSAGE_TRIGGER, MessageTrigger.AUTOMATIC_SCHEDULE.name)
+                .putString(Constants.INPUT_MESSAGE_TRIGGER, MessageTrigger.NO_RESPONSE_DEADLINE.name)
                 .putInt(Constants.EXTRA_DAY_OF_WEEK_VALUE, DayOfWeek.TUESDAY.value)
                 .build()
         )
@@ -109,7 +109,8 @@ class SendWhatsAppMessageWorkerTest {
 
         assertTrue(result is ListenableWorker.Result.Success)
         coVerify { whatsAppSender.sendMessage(configuredContact.phoneNumber, settingsWithContact.messageText) }
-        coVerify { alarmScheduler.rescheduleAutoSend(DayOfWeek.TUESDAY, settingsWithContact.autoSendTime, false) }
+        coVerify { attendanceStatusRepository.setTodayStatus(AttendanceStatus.AUTO_SENT_NO_RESPONSE) }
+        coVerify { alarmScheduler.rescheduleDeadline(DayOfWeek.TUESDAY, settingsWithContact.autoSendTime) }
     }
 
     @Test
@@ -128,26 +129,29 @@ class SendWhatsAppMessageWorkerTest {
 
         assertTrue(result is ListenableWorker.Result.Success)
         coVerify(exactly = 0) { whatsAppSender.sendMessage(any(), any()) }
-        coVerify { alarmScheduler.rescheduleAutoSend(DayOfWeek.MONDAY, settingsWithContact.autoSendTime, true) }
+        coVerify { alarmScheduler.rescheduleDeadline(DayOfWeek.MONDAY, settingsWithContact.autoSendTime) }
     }
 
     @Test
-    fun `deadline send fires and marks status when nobody responded`() = runTest {
+    fun `manual NO response sends immediately without touching the alarm schedule`() = runTest {
         coEvery { settingsRepository.getSettings() } returns settingsWithContact
         coEvery { attendanceStatusRepository.isTodayResolved() } returns false
         coEvery { whatsAppSender.sendMessage(any(), any()) } returns WhatsAppSendResult.Sent
 
         val worker = buildWorker(
             Data.Builder()
-                .putString(Constants.INPUT_MESSAGE_TRIGGER, MessageTrigger.NO_RESPONSE_DEADLINE.name)
-                .putInt(Constants.EXTRA_DAY_OF_WEEK_VALUE, DayOfWeek.FRIDAY.value)
+                .putString(Constants.INPUT_MESSAGE_TRIGGER, MessageTrigger.MANUAL_NO_RESPONSE.name)
                 .build()
         )
 
-        worker.doWork()
+        val result = worker.doWork()
 
+        assertTrue(result is ListenableWorker.Result.Success)
         coVerify { whatsAppSender.sendMessage(configuredContact.phoneNumber, settingsWithContact.messageText) }
-        coVerify { attendanceStatusRepository.setTodayStatus(AttendanceStatus.AUTO_SENT_NO_RESPONSE) }
+        coVerify(exactly = 0) { alarmScheduler.rescheduleDeadline(any(), any()) }
+        // Manual NO taps aren't the deadline trigger, so attendance status isn't overwritten here
+        // (AttendanceResponseHandler already set it to NOT_ATTENDING before enqueueing this work).
+        coVerify(exactly = 0) { attendanceStatusRepository.setTodayStatus(any()) }
     }
 
     @Test
@@ -157,7 +161,7 @@ class SendWhatsAppMessageWorkerTest {
 
         val worker = buildWorker(
             Data.Builder()
-                .putString(Constants.INPUT_MESSAGE_TRIGGER, MessageTrigger.AUTOMATIC_SCHEDULE.name)
+                .putString(Constants.INPUT_MESSAGE_TRIGGER, MessageTrigger.NO_RESPONSE_DEADLINE.name)
                 .putInt(Constants.EXTRA_DAY_OF_WEEK_VALUE, DayOfWeek.THURSDAY.value)
                 .build()
         )
@@ -166,7 +170,7 @@ class SendWhatsAppMessageWorkerTest {
 
         assertTrue(result is ListenableWorker.Result.Failure)
         coVerify(exactly = 0) { whatsAppSender.sendMessage(any(), any()) }
-        coVerify { alarmScheduler.rescheduleAutoSend(DayOfWeek.THURSDAY, settingsWithContact.autoSendTime, false) }
+        coVerify { alarmScheduler.rescheduleDeadline(DayOfWeek.THURSDAY, AppSettings.DEFAULT.autoSendTime) }
     }
 
     @Test
@@ -177,7 +181,7 @@ class SendWhatsAppMessageWorkerTest {
 
         val worker = buildWorker(
             Data.Builder()
-                .putString(Constants.INPUT_MESSAGE_TRIGGER, MessageTrigger.AUTOMATIC_SCHEDULE.name)
+                .putString(Constants.INPUT_MESSAGE_TRIGGER, MessageTrigger.NO_RESPONSE_DEADLINE.name)
                 .putInt(Constants.EXTRA_DAY_OF_WEEK_VALUE, DayOfWeek.TUESDAY.value)
                 .build()
         )

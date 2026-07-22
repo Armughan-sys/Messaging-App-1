@@ -21,13 +21,13 @@ import org.robolectric.shadows.ShadowAlarmManager
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
-import java.time.LocalTime
 import java.time.ZoneId
 
 /**
  * Verifies the AlarmManager scheduling contract described in
- * [com.fightclub.attendance.domain.scheduler.AlarmScheduler]: one alarm per (purpose, day),
- * rebuilt from scratch on every [AlarmSchedulerImpl.scheduleAll] call, with no duplicates.
+ * [com.fightclub.attendance.domain.scheduler.AlarmScheduler]: every active day gets exactly one
+ * prompt alarm and one deadline alarm, rebuilt from scratch on every
+ * [AlarmSchedulerImpl.scheduleAll] call, with no duplicates.
  */
 @RunWith(RobolectricTestRunner::class)
 class AlarmSchedulerImplTest {
@@ -52,38 +52,43 @@ class AlarmSchedulerImplTest {
     }
 
     @Test
-    fun `scheduleAll arms an auto-send alarm for every configured auto-send day`() {
+    fun `scheduleAll arms a prompt and a deadline alarm for every active day`() {
         scheduler.scheduleAll(AppSettings.DEFAULT)
 
-        // AppSettings.DEFAULT.autoSendDays = {TUESDAY, THURSDAY}
-        assertNotNull(pendingAutoSendIntent(DayOfWeek.TUESDAY, isDeadline = false))
-        assertNotNull(pendingAutoSendIntent(DayOfWeek.THURSDAY, isDeadline = false))
+        // AppSettings.DEFAULT.activeDays = Monday through Saturday.
+        for (day in listOf(
+            DayOfWeek.MONDAY, DayOfWeek.TUESDAY, DayOfWeek.WEDNESDAY,
+            DayOfWeek.THURSDAY, DayOfWeek.FRIDAY, DayOfWeek.SATURDAY
+        )) {
+            assertNotNull("prompt alarm missing for $day", pendingPromptIntent(day))
+            assertNotNull("deadline alarm missing for $day", pendingDeadlineIntent(day))
+        }
     }
 
     @Test
-    fun `scheduleAll arms three prompts plus a deadline for every class day`() {
+    fun `scheduleAll arms nothing for a day not in activeDays`() {
         scheduler.scheduleAll(AppSettings.DEFAULT)
 
-        // AppSettings.DEFAULT.classDays = {MONDAY, WEDNESDAY, FRIDAY}
-        for (day in listOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY)) {
-            assertNotNull("prompt alarm missing for $day", pendingPromptIntent(day))
-            assertNotNull("deadline alarm missing for $day", pendingAutoSendIntent(day, isDeadline = true))
-        }
+        assertNull(pendingPromptIntent(DayOfWeek.SUNDAY))
+        assertNull(pendingDeadlineIntent(DayOfWeek.SUNDAY))
     }
 
     @Test
     fun `scheduleAll never leaves alarms for days no longer configured`() {
         scheduler.scheduleAll(AppSettings.DEFAULT)
-        assertNotNull(pendingAutoSendIntent(DayOfWeek.TUESDAY, isDeadline = false))
+        assertNotNull(pendingDeadlineIntent(DayOfWeek.SATURDAY))
 
-        val withoutTuesday = AppSettings.DEFAULT.copy(autoSendDays = setOf(DayOfWeek.THURSDAY))
-        scheduler.scheduleAll(withoutTuesday)
+        val withoutSaturday = AppSettings.DEFAULT.copy(
+            activeDays = AppSettings.DEFAULT.activeDays - DayOfWeek.SATURDAY
+        )
+        scheduler.scheduleAll(withoutSaturday)
 
         assertNull(
-            "Tuesday's auto-send alarm should have been cancelled",
-            pendingAutoSendIntent(DayOfWeek.TUESDAY, isDeadline = false)
+            "Saturday's alarms should have been cancelled",
+            pendingDeadlineIntent(DayOfWeek.SATURDAY)
         )
-        assertNotNull(pendingAutoSendIntent(DayOfWeek.THURSDAY, isDeadline = false))
+        assertNull(pendingPromptIntent(DayOfWeek.SATURDAY))
+        assertNotNull(pendingDeadlineIntent(DayOfWeek.MONDAY))
     }
 
     @Test
@@ -103,12 +108,12 @@ class AlarmSchedulerImplTest {
 
     @Test
     fun `next occurrence helpers report the soonest matching alarm`() {
-        val next = scheduler.nextAutoSendOccurrence(AppSettings.DEFAULT)
-        assertNotNull(next)
+        assertNotNull(scheduler.nextDeadlineOccurrence(AppSettings.DEFAULT))
+        assertNotNull(scheduler.nextPromptOccurrence(AppSettings.DEFAULT))
     }
 
-    private fun pendingAutoSendIntent(day: DayOfWeek, isDeadline: Boolean): PendingIntent? {
-        val requestCode = (if (isDeadline) 5000 else 1000) + day.value
+    private fun pendingDeadlineIntent(day: DayOfWeek): PendingIntent? {
+        val requestCode = 5000 + day.value
         val intent = Intent(context, AutoSendAlarmReceiver::class.java)
         return PendingIntent.getBroadcast(
             context,
@@ -119,7 +124,6 @@ class AlarmSchedulerImplTest {
     }
 
     private fun pendingPromptIntent(day: DayOfWeek): PendingIntent? {
-        // Checks the first prompt slot (base 2000); sufficient to prove the day was armed.
         val requestCode = 2000 + day.value
         val intent = Intent(context, AttendancePromptReceiver::class.java)
         return PendingIntent.getBroadcast(

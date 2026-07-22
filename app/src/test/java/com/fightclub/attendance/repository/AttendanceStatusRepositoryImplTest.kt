@@ -4,6 +4,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.fightclub.attendance.data.local.AppDatabase
 import com.fightclub.attendance.data.local.entity.AttendanceStatus
+import com.fightclub.attendance.data.local.entity.AttendanceStatusEntity
 import com.fightclub.attendance.data.repository.AttendanceStatusRepositoryImpl
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -66,5 +67,33 @@ class AttendanceStatusRepositoryImplTest {
         repository.setTodayStatus(AttendanceStatus.AUTO_SENT_NO_RESPONSE)
 
         assertEquals(AttendanceStatus.AUTO_SENT_NO_RESPONSE, repository.getTodayStatus())
+    }
+
+    @Test
+    fun `getAttendedCountThisWeek only counts ATTENDING days within Monday through today`() = runTest {
+        // 2024-01-17 is a Wednesday; that week runs Mon 2024-01-15 through Sun 2024-01-21.
+        val midMonthClock = Clock.fixed(Instant.parse("2024-01-17T12:00:00Z"), ZoneId.of("UTC"))
+        val repo = AttendanceStatusRepositoryImpl(database.attendanceStatusDao(), midMonthClock)
+        val dao = database.attendanceStatusDao()
+
+        dao.upsert(AttendanceStatusEntity("2024-01-15", AttendanceStatus.ATTENDING.name, 0)) // this week
+        dao.upsert(AttendanceStatusEntity("2024-01-16", AttendanceStatus.ATTENDING.name, 0)) // this week
+        dao.upsert(AttendanceStatusEntity("2024-01-17", AttendanceStatus.NOT_ATTENDING.name, 0)) // this week, not attended
+        dao.upsert(AttendanceStatusEntity("2024-01-08", AttendanceStatus.ATTENDING.name, 0)) // last week, must not count
+
+        assertEquals(2, repo.getAttendedCountThisWeek())
+    }
+
+    @Test
+    fun `getAttendedCountThisMonth only counts ATTENDING days from the 1st through today`() = runTest {
+        val midMonthClock = Clock.fixed(Instant.parse("2024-01-17T12:00:00Z"), ZoneId.of("UTC"))
+        val repo = AttendanceStatusRepositoryImpl(database.attendanceStatusDao(), midMonthClock)
+        val dao = database.attendanceStatusDao()
+
+        dao.upsert(AttendanceStatusEntity("2024-01-03", AttendanceStatus.ATTENDING.name, 0)) // this month
+        dao.upsert(AttendanceStatusEntity("2024-01-15", AttendanceStatus.ATTENDING.name, 0)) // this month
+        dao.upsert(AttendanceStatusEntity("2023-12-30", AttendanceStatus.ATTENDING.name, 0)) // previous month, must not count
+
+        assertEquals(2, repo.getAttendedCountThisMonth())
     }
 }

@@ -19,14 +19,16 @@ data class SettingsEntity(
     val messageText: String = DEFAULT_MESSAGE_TEXT,
 
     // Stored as "HH:mm" (24-hour) strings so they sort and parse trivially.
-    val promptTime1: String = "13:00",
-    val promptTime2: String = "15:00",
-    val promptTime3: String = "15:45",
-    val autoSendTime: String = "16:00",
+    // What time the class itself starts, each active day.
+    val classTime: String = "18:00",
+    // How many hours before classTime the single daily attendance prompt fires.
+    val promptLeadHours: Int = 3,
+    // The deadline: if there's still no response by this clock time, the message auto-sends.
+    val autoSendTime: String = "17:00",
 
-    // Stored as comma-separated java.time.DayOfWeek names, e.g. "MONDAY,WEDNESDAY,FRIDAY".
-    val classDays: String = "MONDAY,WEDNESDAY,FRIDAY",
-    val autoSendDays: String = "TUESDAY,THURSDAY",
+    // Stored as comma-separated java.time.DayOfWeek names, e.g. "MONDAY,TUESDAY,...,SATURDAY".
+    // Every active day gets the same flow: prompt -> (YES/NO/ignored) -> deadline auto-send.
+    val activeDays: String = "MONDAY,TUESDAY,WEDNESDAY,THURSDAY,FRIDAY,SATURDAY",
 
     // "LIGHT", "DARK", or "SYSTEM".
     val themeMode: String = "SYSTEM",

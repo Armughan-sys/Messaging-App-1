@@ -7,14 +7,18 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,8 +39,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -123,49 +129,34 @@ fun SettingsScreen(
             }
 
             item {
-                SectionCard(title = stringResource(R.string.settings_section_class_days)) {
+                SectionCard(title = stringResource(R.string.settings_section_active_days)) {
+                    Text(
+                        text = stringResource(R.string.settings_section_active_days_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
                     DayOfWeekChipRow(
-                        selectedDays = settings.classDays,
+                        selectedDays = settings.activeDays,
                         onToggle = { day ->
-                            val updated = settings.classDays.toMutableSet().apply {
+                            val updated = settings.activeDays.toMutableSet().apply {
                                 if (contains(day)) remove(day) else add(day)
                             }
-                            viewModel.updateClassDays(updated)
+                            viewModel.updateActiveDays(updated)
                         }
                     )
                 }
             }
 
             item {
-                SectionCard(title = stringResource(R.string.settings_section_auto_send_days)) {
-                    DayOfWeekChipRow(
-                        selectedDays = settings.autoSendDays,
-                        onToggle = { day ->
-                            val updated = settings.autoSendDays.toMutableSet().apply {
-                                if (contains(day)) remove(day) else add(day)
-                            }
-                            viewModel.updateAutoSendDays(updated)
-                        }
-                    )
-                }
-            }
-
-            item {
-                SectionCard(title = stringResource(R.string.settings_section_times)) {
+                SectionCard(title = stringResource(R.string.settings_section_class_time)) {
                     TimeRow(
-                        label = stringResource(R.string.settings_prompt_time_1),
-                        time = settings.promptTime1,
-                        onClick = { editingTimeSlot = TimeSlot.PROMPT_1 }
+                        label = stringResource(R.string.settings_section_class_time),
+                        time = settings.classTime,
+                        onClick = { editingTimeSlot = TimeSlot.CLASS_TIME }
                     )
-                    TimeRow(
-                        label = stringResource(R.string.settings_prompt_time_2),
-                        time = settings.promptTime2,
-                        onClick = { editingTimeSlot = TimeSlot.PROMPT_2 }
-                    )
-                    TimeRow(
-                        label = stringResource(R.string.settings_prompt_time_3),
-                        time = settings.promptTime3,
-                        onClick = { editingTimeSlot = TimeSlot.PROMPT_3 }
+                    PromptLeadHoursRow(
+                        hours = settings.promptLeadHours,
+                        onChange = viewModel::updatePromptLeadHours
                     )
                     TimeRow(
                         label = stringResource(R.string.settings_auto_send_time),
@@ -188,9 +179,7 @@ fun SettingsScreen(
 
     editingTimeSlot?.let { slot ->
         val initialTime = when (slot) {
-            TimeSlot.PROMPT_1 -> settings.promptTime1
-            TimeSlot.PROMPT_2 -> settings.promptTime2
-            TimeSlot.PROMPT_3 -> settings.promptTime3
+            TimeSlot.CLASS_TIME -> settings.classTime
             TimeSlot.AUTO_SEND -> settings.autoSendTime
         }
         AppTimePickerDialog(
@@ -198,9 +187,7 @@ fun SettingsScreen(
             onDismiss = { editingTimeSlot = null },
             onConfirm = { time ->
                 when (slot) {
-                    TimeSlot.PROMPT_1 -> viewModel.updatePromptTime1(time)
-                    TimeSlot.PROMPT_2 -> viewModel.updatePromptTime2(time)
-                    TimeSlot.PROMPT_3 -> viewModel.updatePromptTime3(time)
+                    TimeSlot.CLASS_TIME -> viewModel.updateClassTime(time)
                     TimeSlot.AUTO_SEND -> viewModel.updateAutoSendTime(time)
                 }
                 editingTimeSlot = null
@@ -209,7 +196,7 @@ fun SettingsScreen(
     }
 }
 
-private enum class TimeSlot { PROMPT_1, PROMPT_2, PROMPT_3, AUTO_SEND }
+private enum class TimeSlot { CLASS_TIME, AUTO_SEND }
 
 @Composable
 private fun SectionCard(title: String, content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit) {
@@ -223,7 +210,7 @@ private fun SectionCard(title: String, content: @Composable androidx.compose.fou
 
 @Composable
 private fun TimeRow(label: String, time: LocalTime, onClick: () -> Unit) {
-    androidx.compose.foundation.layout.Row(
+    Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -233,6 +220,38 @@ private fun TimeRow(label: String, time: LocalTime, onClick: () -> Unit) {
         }
     }
 }
+
+@Composable
+private fun PromptLeadHoursRow(hours: Int, onChange: (Int) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(R.string.settings_prompt_lead_hours),
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f)
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = { if (hours > MIN_LEAD_HOURS) onChange(hours - 1) }) {
+                Icon(Icons.Filled.Remove, contentDescription = "Decrease")
+            }
+            Text(
+                text = hours.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.width(24.dp),
+                textAlign = TextAlign.Center
+            )
+            IconButton(onClick = { if (hours < MAX_LEAD_HOURS) onChange(hours + 1) }) {
+                Icon(Icons.Filled.Add, contentDescription = "Increase")
+            }
+        }
+    }
+}
+
+private const val MIN_LEAD_HOURS = 0
+private const val MAX_LEAD_HOURS = 12
 
 private val dayLabels = mapOf(
     DayOfWeek.MONDAY to "Mon",
@@ -259,7 +278,7 @@ private fun DayOfWeekChipRow(selectedDays: Set<DayOfWeek>, onToggle: (DayOfWeek)
 
 @Composable
 private fun ThemeSelector(selected: ThemeMode, onSelect: (ThemeMode) -> Unit) {
-    androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         ThemeMode.values().forEach { mode ->
             FilterChip(
                 selected = selected == mode,
@@ -286,7 +305,7 @@ private fun AppTimePickerDialog(
         Card {
             Column(modifier = Modifier.padding(24.dp)) {
                 TimePicker(state = state)
-                androidx.compose.foundation.layout.Row(
+                Row(
                     modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                     horizontalArrangement = Arrangement.End
                 ) {

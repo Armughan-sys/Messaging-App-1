@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.fightclub.attendance.automation.AccessibilityUtils
 import com.fightclub.attendance.automation.WhatsAppAccessibilityService
 import com.fightclub.attendance.data.model.MessageLogEntry
+import com.fightclub.attendance.data.repository.AttendanceStatusRepository
 import com.fightclub.attendance.data.repository.MessageLogRepository
 import com.fightclub.attendance.data.repository.SettingsRepository
 import com.fightclub.attendance.domain.scheduler.AlarmScheduler
@@ -23,15 +24,17 @@ data class HomeUiState(
     val isLoading: Boolean = true,
     val contactConfigured: Boolean = false,
     val contactName: String? = null,
-    val nextAutoSendMillis: Long? = null,
+    val nextDeadlineMillis: Long? = null,
     val nextPromptMillis: Long? = null,
     val lastMessage: MessageLogEntry? = null,
     val canScheduleExactAlarms: Boolean = true,
-    val whatsAppAccessibilityServiceEnabled: Boolean = true
+    val whatsAppAccessibilityServiceEnabled: Boolean = true,
+    val classesAttendedThisWeek: Int = 0,
+    val classesAttendedThisMonth: Int = 0
 ) {
     /** The single soonest upcoming action across both alarm types, for the headline card. */
     val nextScheduledActionMillis: Long?
-        get() = listOfNotNull(nextAutoSendMillis, nextPromptMillis).minOrNull()
+        get() = listOfNotNull(nextDeadlineMillis, nextPromptMillis).minOrNull()
 }
 
 @HiltViewModel
@@ -39,12 +42,13 @@ class HomeViewModel @Inject constructor(
     @param:ApplicationContext private val context: Context,
     settingsRepository: SettingsRepository,
     messageLogRepository: MessageLogRepository,
+    private val attendanceStatusRepository: AttendanceStatusRepository,
     private val alarmScheduler: AlarmScheduler
 ) : ViewModel() {
 
-    // Recomputing "next occurrence" (and the accessibility-service check) only when settings
-    // change would leave a stale display once that occurrence passes or the user flips the
-    // service in system Settings, so also re-tick once a minute.
+    // Recomputing "next occurrence" (the accessibility-service check, and the attendance counts)
+    // only when settings change would leave a stale display once that occurrence passes, the day
+    // rolls over, or the user flips the service in system Settings, so also re-tick once a minute.
     private val ticker = flow {
         while (true) {
             emit(Unit)
@@ -61,14 +65,16 @@ class HomeViewModel @Inject constructor(
             isLoading = false,
             contactConfigured = settings.contact != null,
             contactName = settings.contact?.displayName,
-            nextAutoSendMillis = alarmScheduler.nextAutoSendOccurrence(settings),
+            nextDeadlineMillis = alarmScheduler.nextDeadlineOccurrence(settings),
             nextPromptMillis = alarmScheduler.nextPromptOccurrence(settings),
             lastMessage = lastMessage,
             canScheduleExactAlarms = alarmScheduler.canScheduleExactAlarms(),
             whatsAppAccessibilityServiceEnabled = AccessibilityUtils.isAccessibilityServiceEnabled(
                 context,
                 WhatsAppAccessibilityService::class.java
-            )
+            ),
+            classesAttendedThisWeek = attendanceStatusRepository.getAttendedCountThisWeek(),
+            classesAttendedThisMonth = attendanceStatusRepository.getAttendedCountThisMonth()
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState())
 }

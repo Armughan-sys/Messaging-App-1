@@ -36,12 +36,9 @@ enum class MessageDeliveryStatus {
 
 /** What caused a message to be sent, shown in history for transparency. */
 enum class MessageTrigger {
-    /** Unconditional Tuesday/Thursday schedule. */
-    AUTOMATIC_SCHEDULE,
-
-    /** User tapped NO on an attendance prompt. */
+    /** User tapped NO on the attendance prompt. */
     MANUAL_NO_RESPONSE,
 
-    /** No response was received by the 4:00 PM deadline. */
+    /** No response was received by the daily deadline. */
     NO_RESPONSE_DEADLINE
 }

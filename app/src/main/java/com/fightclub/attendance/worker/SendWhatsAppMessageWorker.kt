@@ -9,7 +9,6 @@ import com.fightclub.attendance.automation.WhatsAppSender
 import com.fightclub.attendance.data.local.entity.AttendanceStatus
 import com.fightclub.attendance.data.local.entity.MessageDeliveryStatus
 import com.fightclub.attendance.data.local.entity.MessageTrigger
-import com.fightclub.attendance.data.model.AppSettings
 import com.fightclub.attendance.data.repository.AttendanceStatusRepository
 import com.fightclub.attendance.data.repository.MessageLogRepository
 import com.fightclub.attendance.data.repository.SettingsRepository
@@ -20,13 +19,13 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.time.Clock
 import java.time.DayOfWeek
+import java.time.LocalTime
 
 /**
- * Does the actual work of sending the attendance WhatsApp message, for every trigger in
+ * Does the actual work of sending the attendance WhatsApp message, for both triggers in
  * [MessageTrigger]:
- *  - [MessageTrigger.AUTOMATIC_SCHEDULE]: the unconditional Tuesday/Thursday send.
- *  - [MessageTrigger.NO_RESPONSE_DEADLINE]: the Mon/Wed/Fri 4:00 PM deadline, sent only if the
- *    attendance question is still [AttendanceStatus.PENDING].
+ *  - [MessageTrigger.NO_RESPONSE_DEADLINE]: the daily deadline, sent only if the attendance
+ *    question is still [AttendanceStatus.PENDING] (i.e. the prompt was ignored).
  *  - [MessageTrigger.MANUAL_NO_RESPONSE]: the user tapped NO, so send immediately.
  *
  * Runs as a [CoroutineWorker] (rather than directly in a BroadcastReceiver) so the send survives
@@ -56,13 +55,13 @@ class SendWhatsAppMessageWorker @AssistedInject constructor(
 
         if (trigger == MessageTrigger.NO_RESPONSE_DEADLINE && attendanceStatusRepository.isTodayResolved()) {
             // The user already answered (or a previous run already auto-sent); stay quiet.
-            rescheduleIfAutomatic(trigger, dayValue, settings)
+            rescheduleDeadlineIfNeeded(dayValue, settings.autoSendTime)
             return Result.success()
         }
 
         val contact = settings.contact
         if (contact == null) {
-            rescheduleIfAutomatic(trigger, dayValue, settings)
+            rescheduleDeadlineIfNeeded(dayValue, settings.autoSendTime)
             notificationHelper.showMessageStatusNotification(
                 success = false,
                 reason = "No manager contact configured yet — open the app to select one."
@@ -97,22 +96,16 @@ class SendWhatsAppMessageWorker @AssistedInject constructor(
             }
         }
 
-        rescheduleIfAutomatic(trigger, dayValue, settings)
+        rescheduleDeadlineIfNeeded(dayValue, settings.autoSendTime)
         return Result.success()
     }
 
     /**
-     * Automatic triggers (weekly Tue/Thu send, and the Mon/Wed/Fri deadline) must queue up their
-     * own next occurrence one week ahead; a manual NO tap has no recurring schedule to renew.
+     * The daily deadline alarm must queue up its own next occurrence one week ahead; a manual NO
+     * tap has no recurring schedule to renew (it didn't come from an alarm in the first place).
      */
-    private fun rescheduleIfAutomatic(
-        trigger: MessageTrigger,
-        dayValue: Int?,
-        settings: AppSettings
-    ) {
-        if (trigger == MessageTrigger.MANUAL_NO_RESPONSE || dayValue == null) return
-        val dayOfWeek = DayOfWeek.of(dayValue)
-        val isDeadline = trigger == MessageTrigger.NO_RESPONSE_DEADLINE
-        alarmScheduler.rescheduleAutoSend(dayOfWeek, settings.autoSendTime, isDeadline)
+    private fun rescheduleDeadlineIfNeeded(dayValue: Int?, autoSendTime: LocalTime) {
+        if (dayValue == null) return
+        alarmScheduler.rescheduleDeadline(DayOfWeek.of(dayValue), autoSendTime)
     }
 }

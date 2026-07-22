@@ -16,6 +16,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import java.time.DayOfWeek
+import java.time.LocalTime
 
 @RunWith(RobolectricTestRunner::class)
 class SettingsRepositoryImplTest {
@@ -43,8 +44,20 @@ class SettingsRepositoryImplTest {
 
         assertNull(settings.contact)
         assertEquals("AoA Abdullah\nSaim and me won't be attending the class today", settings.messageText)
-        assertEquals(setOf(DayOfWeek.MONDAY, DayOfWeek.WEDNESDAY, DayOfWeek.FRIDAY), settings.classDays)
-        assertEquals(setOf(DayOfWeek.TUESDAY, DayOfWeek.THURSDAY), settings.autoSendDays)
+        assertEquals(
+            setOf(
+                DayOfWeek.MONDAY,
+                DayOfWeek.TUESDAY,
+                DayOfWeek.WEDNESDAY,
+                DayOfWeek.THURSDAY,
+                DayOfWeek.FRIDAY,
+                DayOfWeek.SATURDAY
+            ),
+            settings.activeDays
+        )
+        assertEquals(LocalTime.of(18, 0), settings.classTime)
+        assertEquals(3, settings.promptLeadHours)
+        assertEquals(LocalTime.of(15, 0), settings.promptTime)
     }
 
     @Test

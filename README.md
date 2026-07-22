@@ -13,29 +13,31 @@ class — on a schedule, with no manual action required most of the time.
 
 ## What it does
 
-- **Every Tuesday and Thursday at 4:00 PM**, the app sends the attendance WhatsApp message
-  automatically, unconditionally — no prompt, no confirmation needed.
-- **On class days (Monday/Wednesday/Friday)**, at **1:00 PM** it shows a full-screen notification:
-  *"Are you going to today's fight class?"* with **YES** / **NO** buttons.
-  - **YES** → nothing happens.
-  - **NO** → the WhatsApp message is sent immediately.
-  - **No response** → asked again at **3:00 PM**, then **3:45 PM**.
-  - **Still no response by 4:00 PM** → the WhatsApp message is sent automatically.
+- **Every active day** (Monday through Saturday by default — fully customizable), the app follows
+  the same flow:
+  - At **class time minus a configurable number of lead hours**, it shows a full-screen
+    notification: *"Are you going to today's fight class?"* with **YES** / **NO** buttons.
+    - **YES** → nothing happens.
+    - **NO** → the WhatsApp message is sent immediately.
+    - **No response** → nothing more happens until the deadline.
+  - **Still no response by your configured deadline time** → the WhatsApp message is sent
+    automatically.
 - All of this keeps working even if the app is closed or swiped away, and every schedule is
   restored automatically after the phone reboots.
-- The Home screen shows the next scheduled action, the next automatic message date/time, the next
+- The Home screen shows **classes attended this week and this month** (counted from days you
+  answered YES), the next scheduled action, the next automatic message date/time, the next
   attendance prompt, and the last message sent (date, time, delivery status) — plus a warning
   banner if WhatsApp Auto-Send is turned off.
-- Settings let you change the contact, the message text, the three prompt times, the automatic
-  send time, which days are "class days" vs. "automatic send days," and the app theme
-  (light/dark/system).
+- Settings let you customize: the manager contact, the message text, which days are active, the
+  class start time, how many hours before class the prompt fires, the deadline (auto-send) time,
+  and the app theme (light/dark/system).
 
 ## How the WhatsApp send actually works
 
 WhatsApp does not provide any API a regular Android app can call to send a message on your
 behalf — the only thing an app can do is open WhatsApp with a chat and message pre-filled, and
-from there **a human has to tap Send**. To make Tuesday/Thursday and the 4:00 PM deadline truly
-automatic (as originally specified), this app instead uses an **Accessibility Service**
+from there **a human has to tap Send**. To make the deadline auto-send truly automatic (as
+originally specified), this app instead uses an **Accessibility Service**
 (`automation/WhatsAppAccessibilityService`) that:
 
 1. Opens WhatsApp directly on Abdullah's chat with the message already typed in, via WhatsApp's
@@ -63,7 +65,7 @@ turn it on. The Home screen shows a warning banner with a direct shortcut there 
 - **A 15-second timeout** applies to every send attempt; if WhatsApp doesn't finish loading the
   chat (slow phone, WhatsApp update mid-flow, etc.) in time, the attempt is logged as failed and
   a notification tells you so — nothing is silently lost, but nothing retries automatically either
-  beyond the app's normal weekly/deadline schedule.
+  beyond the app's normal daily schedule.
 - The very first time you use WhatsApp's click-to-chat link, WhatsApp may show a one-time
   "Continue to chat" confirmation screen; the automation tries to detect and tap through that too,
   but this is the single most likely thing to need a one-off manual tap on a brand-new install.
@@ -84,18 +86,20 @@ but it's a straightforward revert if you change your mind (swap `WhatsAppSender`
   `androidx.hilt:hilt-work` so `WorkManager` workers get constructor injection too.
 - **Persistence**: Room (`data/local`) — a single-row `settings` table, an append-only
   `message_log` table (for the Home screen's history/status), and an `attendance_status` table
-  keyed by date (so the 3:00 PM / 3:45 PM reminders know to stay silent once you've already
-  answered).
-- **Scheduling**: `domain/scheduler/AlarmScheduler` owns every `AlarmManager` interaction.
-  `AlarmManager` has no "every Tuesday" primitive, so each alarm re-schedules its own next
-  occurrence, one week ahead, the moment it fires. Every alarm's `PendingIntent` request code is
-  deterministic (`namespace + dayOfWeek.value`), so re-arming an alarm simply replaces the
-  previous one instead of stacking a duplicate — this is what "prevent duplicate scheduling"
-  means in practice here.
+  keyed by date. The latter both stops a stray duplicate alarm firing from double-prompting once
+  you've answered, and — via `countByStatusInRange` — powers the "classes attended this
+  week/month" counters (a day counts once its status is `ATTENDING`, i.e. you tapped YES).
+- **Scheduling**: `domain/scheduler/AlarmScheduler` owns every `AlarmManager` interaction. Every
+  active day gets exactly two alarms, both computed from the same settings: a **prompt** alarm at
+  `AppSettings.promptTime` (class time minus the configured lead hours) and a **deadline** alarm
+  at the configured auto-send time. `AlarmManager` has no "every Tuesday" primitive, so each alarm
+  re-schedules its own next occurrence, one week ahead, the moment it fires. Every alarm's
+  `PendingIntent` request code is deterministic (`namespace + dayOfWeek.value`), so re-arming an
+  alarm simply replaces the previous one instead of stacking a duplicate — this is what "prevent
+  duplicate scheduling" means in practice here.
 - **Receivers**: `BootReceiver` (restores everything after reboot/app-update),
-  `AutoSendAlarmReceiver` (Tue/Thu send + the Mon/Wed/Fri 4:00 PM deadline),
-  `AttendancePromptReceiver` (the 1/3/3:45 PM prompts), `NotificationActionReceiver`
-  (YES/NO taps from the notification itself, without opening the app).
+  `AutoSendAlarmReceiver` (the daily deadline), `AttendancePromptReceiver` (the daily prompt),
+  `NotificationActionReceiver` (YES/NO taps from the notification itself, without opening the app).
 - **Automation** (`automation/`): `WhatsAppLauncher` (opens the pre-filled chat),
   `WhatsAppAccessibilityService` (taps Send), `AccessibilityUtils` (checks whether the user has
   turned the service on), `WhatsAppSender` (orchestrates the two, with a timeout).
@@ -208,22 +212,26 @@ Run unit tests with:
 
 - `util/DateTimeUtilsTest` — the "next occurrence" date math (same day vs. rolling to next week,
   exact-boundary handling).
-- `scheduler/AlarmSchedulerImplTest` — verifies `scheduleAll()` arms the right alarms for the
-  right days, cancels alarms for days removed from settings, and never duplicates an alarm on a
-  repeat call (Robolectric, inspecting the shadow `AlarmManager`).
+- `scheduler/AlarmSchedulerImplTest` — verifies `scheduleAll()` arms one prompt alarm and one
+  deadline alarm for every active day, arms nothing for inactive days, cancels alarms for days
+  removed from settings, and never duplicates an alarm on a repeat call (Robolectric, inspecting
+  the shadow `AlarmManager`).
 - `automation/WhatsAppSenderTest` — the realistically off-device-testable parts of the WhatsApp
   send flow: WhatsApp not installed, the accessibility service never enabled, and the service
   enabled-in-settings-but-not-actually-running case. Actually tapping WhatsApp's Send button
   requires a real WhatsApp window and isn't something Robolectric can simulate — see
   [How the WhatsApp send actually works](#how-the-whatsapp-send-actually-works).
-- `worker/SendWhatsAppMessageWorkerTest` — the unconditional Tue/Thu send, the deadline send being
-  skipped once already answered, the deadline firing when nobody responded, the
-  no-contact-configured failure path, and the accessibility-service-disabled path.
+- `worker/SendWhatsAppMessageWorkerTest` — the deadline send firing and rescheduling when nobody
+  responded, the deadline send being skipped once already answered, a manual NO response sending
+  immediately without touching the alarm schedule, the no-contact-configured failure path, and the
+  accessibility-service-disabled path.
 - `receiver/BootReceiverTest` — confirms `BOOT_COMPLETED`/`MY_PACKAGE_REPLACED` enqueue exactly
   one `RescheduleWorker` job, unrelated broadcasts are ignored, and repeated boots don't queue up
   duplicates.
-- `repository/SettingsRepositoryImplTest`, `repository/AttendanceStatusRepositoryImplTest` —
-  Room round-trip tests against an in-memory database.
+- `repository/SettingsRepositoryImplTest` — Room round-trip tests against an in-memory database,
+  including the derived `promptTime` (class time minus lead hours) calculation.
+- `repository/AttendanceStatusRepositoryImplTest` — Room round-trip tests plus the weekly/monthly
+  attended-class counters, verifying days outside the current week/month are correctly excluded.
 
 Instrumented tests (`app/src/androidTest`, run with `./gradlew connectedAndroidTest` on a device
 or emulator) include a Room sanity check against the real on-device SQLite implementation.

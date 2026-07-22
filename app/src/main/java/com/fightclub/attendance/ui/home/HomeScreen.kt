@@ -5,13 +5,16 @@ import android.provider.Settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Send
@@ -29,7 +32,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -115,6 +120,23 @@ fun HomeScreen(
             }
 
             item {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    StatCard(
+                        icon = Icons.Filled.DateRange,
+                        title = stringResource(R.string.home_classes_this_week),
+                        value = state.classesAttendedThisWeek.toString(),
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatCard(
+                        icon = Icons.Filled.CalendarMonth,
+                        title = stringResource(R.string.home_classes_this_month),
+                        value = state.classesAttendedThisMonth.toString(),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            item {
                 InfoCard(
                     icon = Icons.Filled.CalendarMonth,
                     title = stringResource(R.string.home_next_scheduled_action),
@@ -127,7 +149,7 @@ fun HomeScreen(
                 InfoCard(
                     icon = Icons.Filled.Send,
                     title = stringResource(R.string.home_next_auto_message),
-                    value = state.nextAutoSendMillis?.let(::formatMillis)
+                    value = state.nextDeadlineMillis?.let(::formatMillis)
                         ?: stringResource(R.string.home_no_schedule)
                 )
             }
@@ -149,7 +171,7 @@ fun HomeScreen(
 }
 
 @Composable
-private fun InfoCard(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, value: String) {
+private fun InfoCard(icon: ImageVector, title: String, value: String) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = title, style = MaterialTheme.typography.labelLarge)
@@ -157,6 +179,28 @@ private fun InfoCard(icon: androidx.compose.ui.graphics.vector.ImageVector, titl
                 text = value,
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(top = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatCard(icon: ImageVector, title: String, value: String, modifier: Modifier = Modifier) {
+    Card(modifier = modifier) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Text(
+                text = value,
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
     }
@@ -192,8 +236,8 @@ private fun LastMessageCard(lastMessage: MessageLogEntry?) {
                     Icons.Filled.NotificationsActive to stringResource(R.string.home_message_status_pending)
             }
 
-            androidx.compose.foundation.layout.Row(
-                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 Icon(statusIcon, contentDescription = null, modifier = Modifier.padding(end = 8.dp))
@@ -205,7 +249,7 @@ private fun LastMessageCard(lastMessage: MessageLogEntry?) {
 
 @Composable
 private fun WarningCard(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     text: String,
     actionLabel: String? = null,
     onAction: (() -> Unit)? = null
@@ -215,7 +259,7 @@ private fun WarningCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            androidx.compose.foundation.layout.Row {
+            Row {
                 Icon(
                     icon,
                     contentDescription = null,

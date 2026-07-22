@@ -12,23 +12,20 @@ import com.fightclub.attendance.util.Constants
 import com.fightclub.attendance.worker.SendWhatsAppMessageWorker
 
 /**
- * Fires at exactly 4:00 PM on the days [com.fightclub.attendance.domain.scheduler.AlarmScheduler]
- * scheduled it for: unconditionally on Tuesday/Thursday, and as the "no response yet" deadline on
- * Monday/Wednesday/Friday. All of the actual work (checking attendance status, sending the
- * WhatsApp message, logging, re-arming next week's alarm) happens in
- * [SendWhatsAppMessageWorker] so it survives process death and benefits from WorkManager's
- * Doze-aware execution guarantees.
+ * Fires once per active day at the configured deadline time
+ * ([com.fightclub.attendance.data.model.AppSettings.autoSendTime]). All of the actual work
+ * (checking whether the attendance prompt was already answered, sending the WhatsApp message,
+ * logging, re-arming next week's alarm) happens in [SendWhatsAppMessageWorker] so it survives
+ * process death and benefits from WorkManager's Doze-aware execution guarantees.
  */
 class AutoSendAlarmReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
         val dayValue = intent.getIntExtra(Constants.EXTRA_DAY_OF_WEEK_VALUE, -1)
         if (dayValue !in 1..7) return
-        val isDeadline = intent.getBooleanExtra(Constants.EXTRA_IS_DEADLINE, false)
-        val trigger = if (isDeadline) MessageTrigger.NO_RESPONSE_DEADLINE else MessageTrigger.AUTOMATIC_SCHEDULE
 
         val inputData = Data.Builder()
-            .putString(Constants.INPUT_MESSAGE_TRIGGER, trigger.name)
+            .putString(Constants.INPUT_MESSAGE_TRIGGER, MessageTrigger.NO_RESPONSE_DEADLINE.name)
             .putInt(Constants.EXTRA_DAY_OF_WEEK_VALUE, dayValue)
             .build()
 
@@ -38,7 +35,7 @@ class AutoSendAlarmReceiver : BroadcastReceiver() {
 
         WorkManager.getInstance(context)
             .enqueueUniqueWork(
-                "${Constants.WORK_SEND_MESSAGE}_${trigger.name}_$dayValue",
+                "${Constants.WORK_SEND_MESSAGE}_${MessageTrigger.NO_RESPONSE_DEADLINE.name}_$dayValue",
                 ExistingWorkPolicy.REPLACE,
                 request
             )
